@@ -72,7 +72,7 @@ contract Lottery{
         bytes32 blockHash = blockhash(block.number - tickets.length);
         uint256 randomNumber = uint256 (
             keccak256(abi.encodePacked(block.timestamp, blockHash));
-            
+        );
             uint256 winningTicket = randomNumber % tickets.length;
             
             address winner = tickets[winningTicket];
@@ -83,8 +83,55 @@ contract Lottery{
             delete tickets;
             expiration = block.timestamp + duration;
 
+    }
 
-        )
+    function restartDraw() public isOperator {
+        require(tickets.length == 0, "Cannot Restart Draw");
+
+        delete tickets;
+        expiration = block.timestamp + duration;
+
+    }
+
+    function checkWinningAmount() public isWinner {
+        address payable winner = payable(msg.sender);
+
+        uint256 reward2Transfer = winnings[winner];
+        winnings[winner] = 0;
+        winner.transfer(reward2Transfer);
+    }
+
+    function RefundAll public {
+        require(block.timestamp >= expiration, "the lottery not expired yet");
+
+        for (uint256 i =0; i < tickets.length; i++){
+            address payable to = payable(tickets[i]);
+            tickets[i] = address(0);
+            to.transfer(ticketPrice);
+        }
+
+        delete tickets;
+    }
+
+    function WithdrawCommission() public isOperator {
+        address payable operator = payable(msg.sender);
+
+        uint256 commission2Transfer = operatorTotalCommission;
+        operatorTotalCommission = 0;
+
+        operator.transfer(commission2Transfer);
+    }
+
+    function IsWinner() public view returns (bool){
+        return winnnings[msg.sender] > 0;
+    }
+
+    function CurrentWinningReward() public view returns (uint256){
+        return tickets.length * ticketPrice;
+    }
+
+    function RemainingTickets() public view returns (uint256) {
+        return maxTickets - tickets.length;
     }
 
 }
